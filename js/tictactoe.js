@@ -15,7 +15,7 @@
  * Game: acutal game logic, handle score, turn change, and assigning X or O to players
  */
 
-//game class
+//game main class
 const game = (function (mainDoc) {
     //Enum classes
     const MOVE_TYPE = {
@@ -59,12 +59,20 @@ const game = (function (mainDoc) {
             playerScore += 1;
         }
 
+        const resetScore = () => {
+            playerScore = 0;
+        }
+
         const setMoveType = () => {
             if (moveType !== MOVE_TYPE.X && moveType !== MOVE_TYPE.O) {
                 throw new Error("Illegal move type!");
             } else {
                 playerMoveType = moveType;
             }
+        }
+
+        const setName = (newName) => {
+            playerName = newName;
         }
 
         const getScore = () => playerScore;
@@ -77,12 +85,90 @@ const game = (function (mainDoc) {
             getName,
             getMoveType,
             getScore,
-            incrementScore
+            incrementScore,
+            resetScore,
+            setName
         }
     }
 
+    //Turn management
+    const turnManager = (function (doc) {
+        const TURN = {
+            PLAYER_TURN: 0,
+            COMPUTER_TURN: 1
+        }
+        const playerScoreDisplay = doc.querySelector("#player-score");
+        const computerScoreDisplay = doc.querySelector("#computer-score");
+        const playerNameDisplay = doc.querySelector("#player-display-name");
+        const comNameDisplay = doc.querySelector("#computer-display-name");
+
+        let currentTurn;
+        let player = createPlayer("Player", MOVE_TYPE.X);
+        let computer = createPlayer("Computer", MOVE_TYPE.O);
+
+        function randomizeFirstTurn() {
+            (Math.random() < 0.5) ? currentTurn = TURN.PLAYER_TURN : currentTurn = TURN.COMPUTER_TURN;
+        }
+
+        function advanceTurn() {
+            if (currentTurn === TURN.PLAYER_TURN) {
+                currentTurn = TURN.COMPUTER_TURN;
+            } else {
+                currentTurn = TURN.PLAYER_TURN;
+            }
+        }
+
+        function getCurrentPlayer() {
+            if (currentTurn === TURN.PLAYER_TURN) {
+                return player;
+            } else {
+                return computer;
+            }
+        }
+
+        function incrementcurrentPlayerScore() {
+            if (currentTurn === TURN.PLAYER_TURN) {
+                player.incrementScore();
+            } else {
+                computer.incrementScore();
+            }
+            displayScore();
+        }
+
+        function resetScoreBoard() {
+            player.resetScore();
+            computer.resetScore();
+            displayScore();
+        }
+
+        function displayScore() {
+            playerScoreDisplay.textContent = player.getScore();
+            computerScoreDisplay.textContent = computer.getScore();
+        }
+
+        function displayNames() {
+            playerNameDisplay.textContent = player.getName();
+            comNameDisplay.textContent = computer.getName();
+        }
+
+        function setPlayerNames(playerName, computerName) {
+            player.setName(playerName);
+            computer.setName(computerName);
+        }
+
+        return {
+            randomizeFirstTurn,
+            advanceTurn,
+            getCurrentPlayer,
+            incrementcurrentPlayerScore,
+            resetScoreBoard,
+            setPlayerNames,
+            displayNames
+        }
+    })(mainDoc);
+
     //Board logic
-    const gameBoard = (function (doc) {
+    const gameBoard = (function (doc, manager) {
 
         let mainBoard = [
             [0, 0, 0],
@@ -117,7 +203,7 @@ const game = (function (mainDoc) {
                         if (e.target.hasAttribute("data-x") &&
                             e.target.hasAttribute("data-y")) {
                             placeMove(
-                                MOVE_TYPE.O,
+                                manager.getCurrentPlayer().getMoveType(),
                                 createLocation(
                                     parseInt(e.target.getAttribute("data-x")),
                                     parseInt(e.target.getAttribute("data-y"))
@@ -158,6 +244,15 @@ const game = (function (mainDoc) {
             return currentBoardState;
         }
 
+        function showToast(message) {
+            const toastModal = doc.querySelector(".toast-container");
+            toastModal.querySelector(".toast").textContent = message;
+            toastModal.showModal();
+            toastModal.addEventListener("click", (e) => {
+                toastModal.close();
+            });
+        }
+
         /**
          * 
          * @param {Int} moveType 
@@ -169,6 +264,7 @@ const game = (function (mainDoc) {
                 mainBoard[location.x][location.y] = moveType;
                 displayWinning();
                 updateBoard();
+                manager.advanceTurn();
             }
         }
 
@@ -190,12 +286,17 @@ const game = (function (mainDoc) {
             let boardFullCheck = checkIfBoardFull();
             if (result === 3) {
                 console.log("X win!");
+                showToast(`X win, ${turnManager.getCurrentPlayer().getName()} has won this game!`);
+                turnManager.incrementcurrentPlayerScore();
                 currentBoardState = BOARD_STATE.X_WIN;
             } else if (result === -3) {
                 console.log("O win!");
+                showToast(`O win! ${turnManager.getCurrentPlayer().getName()} has won this game!`);
+                turnManager.incrementcurrentPlayerScore();
                 currentBoardState = BOARD_STATE.O_WIN;
             } else if (result !== -3 && result !== 3 && boardFullCheck) {
                 console.log("draw!");
+                showToast("draw!");
                 currentBoardState = BOARD_STATE.DRAW;
             } else {
                 console.log("...");
@@ -287,54 +388,52 @@ const game = (function (mainDoc) {
             placeMove,
             getCurrentBoardState
         }
-    })(mainDoc)
-
-    //Game logic
-    /*
-        init board
-        choose first turn
-        let player play turn
-        switch turn to computer
-        repeat until one win
-        when won, increment score
-        restart game
-    */
-
-    const TURN = {
-        PLAYER_TURN: 0,
-        COMPUTER_TURN: 1
-    }
-    let currentTurn;
-    let player = createPlayer("Player", MOVE_TYPE.X);
-    let computer = createPlayer("Computer", MOVE_TYPE.O);
-
+    })(mainDoc, turnManager)
 
     function initGame() {
+        askForNameDialog();
+    }
+
+    function resetGame() {
         gameBoard.initBoard();
-        chooseFirstTurn();
     }
 
-    function chooseFirstTurn(){
-        (Math.random() < 0.5)? currentTurn = TURN.PLAYER_TURN:currentTurn = TURN.COMPUTER_TURN;
-    }
+    function askForNameDialog() {
+        const formModal = mainDoc.querySelector(".form-container");
+        const form = mainDoc.querySelector(".name-form");
+        const button = mainDoc.querySelector(".submit-button");
 
-    function PlayerPlayTurn(){
-        //TODO
-    }
+        formModal.showModal();
 
-    function computerPlayTurn(){
-        //TODO
+        button.addEventListener("click", (e) => {
+            if (!form.checkValidity()) {
+                form.reportValidity();
+            } else {
+                e.preventDefault();
+                const playerNameInput = mainDoc.querySelector("#player-name").value;
+                const comNameInput = mainDoc.querySelector("#computer-name").value;
+                turnManager.setPlayerNames(
+                    (playerNameInput == null) ? "Player" : playerNameInput,
+                    (comNameInput == null) ? "Computer" : comNameInput
+                )
+                turnManager.displayNames();
+                gameBoard.initBoard();
+                formModal.close();
+            }
+        });
     }
 
     return {
-        initGame
+        initGame,
+        resetGame
     }
 
 })(document);
 
 
 //For testing
+game.resetGame();
 game.initGame();
 document.querySelector(".reset-board-button").addEventListener("click", (e) => {
-    game.initGame();
+    game.resetGame();
 });

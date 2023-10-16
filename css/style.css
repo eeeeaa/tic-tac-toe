@@ -10,19 +10,115 @@ body {
     padding: 0;
 }
 
-body{
+@keyframes slideIn {
+    0% {
+        transform: translateY(-110%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(-50%);
+        opacity: 1;
+    }
+}
+
+body {
     min-height: 100vh;
     display: grid;
     grid-template: auto/auto;
     justify-content: center;
     align-content: center;
     align-items: center;
+    gap: 2em;
     background-image: linear-gradient(45deg, #500724, #831843);
+}
+
+button {
+    border-radius: 1em;
+    border-color: transparent;
+    padding: 0.5em 1em;
+    background-color: #500724;
+}
+
+button:hover {
+    background-color: #6e0c34;
+    transition: all 0.1s ease;
+}
+
+table {
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+}
+
+td,
+th {
+    border-radius: 0.5em;
+}
+
+td,
+th {
+    border: 1px solid transparent;
+    padding: 10px 20px;
+}
+
+th {
+    background-color: #500724;
+}
+
+td {
+    text-align: center;
+}
+
+tr:nth-child(even) td {
+    background-color: #ad3465;
+}
+
+tr:nth-child(odd) td {
+    background-color: #a8285b;
+}
+
+.form-container,
+.toast-container {
+    appearance: none;
+    position: fixed;
+    top: 5%;
+    transform: translateY(-50%);
+    z-index: 1;
+    border-color: transparent;
+    border-radius: 2em;
+    padding: 1em 3em;
+    background-color: #291114;
+    overflow: auto;
+}
+
+.form-container:focus,
+.toast-container:focus {
+    outline: none;
+}
+
+.form-container[open],
+.toast-container[open] {
+    animation: slideIn 0.5s;
+}
+
+input[type="text"] {
+    appearance: none;
+    border-radius: 1em;
+    border-color: transparent;
+    background-color: #500724;
+    color: white;
+}
+
+.toast {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20%, 1fr));
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .game-container {
     display: grid;
-    grid-template: 3fr 1fr/repeat(2,1fr);
+    grid-template: 3fr 1fr/repeat(2, 1fr);
     justify-items: center;
     align-items: center;
     gap: 1em;
@@ -36,15 +132,16 @@ body{
     grid-area: 1/1/2/-1;
 
     display: grid;
-    grid-template: repeat(3,1fr)/repeat(3,1fr);
-    gap:1em;
+    grid-template: repeat(3, 1fr)/repeat(3, 1fr);
+    gap: 1em;
     align-items: center;
     justify-items: center;
     padding: 1em;
     border: 2px solid #e11d48;
+    cursor: pointer;
 }
 
-.game-container #game-board .game-cell{
+.game-container #game-board .game-cell {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -53,11 +150,4 @@ body{
     height: 2em;
     font-size: xx-large;
     font-weight: 900;
-}
-
-.game-container button {
-    border-radius: 1em;
-    border-color: transparent;
-    padding: 0.5em 1em;
-    background-color: #500724;
 }

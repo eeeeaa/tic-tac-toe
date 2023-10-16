@@ -8,10 +8,36 @@
     <script src="./js/tictactoe.js" defer></script>
 </head>
 <body>
+    <dialog class="toast-container">
+        <div class="toast"></div>
+    </dialog>
+    <dialog class="form-container">
+        <form action="" method="post" class="name-form">
+            <label for="player-name">Player name</label>
+            <input type="text" name="player-name" id="player-name" placeholder="John Doe" required>
+            <label for="computer-name">Computer name</label>
+            <input type="text" name="computer-name" id="computer-name" placeholder="Mary Ann" required>
+            <button type="submit" class="submit-button">Confirm</button>
+        </form>
+    </dialog>
     <div class="game-container">
         <div id="game-board">
         </div>
         <button class="reset-board-button">Reset board</button>
     </div>
+    <table class="score-board">
+        <thead>
+            <tr>
+                <th id="player-display-name">Player</th>
+                <th id="computer-display-name">Computer</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="player-score">0</td>
+                <td id="computer-score">0</td>
+            </tr>
+        </tbody>
+    </table>
 </body>
 </html>
