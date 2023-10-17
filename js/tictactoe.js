@@ -506,7 +506,6 @@ const game = (function (mainDoc) {
 
 
 //For testing
-game.resetGame();
 game.initGame();
 document.querySelector(".reset-board-button").addEventListener("click", (e) => {
     game.resetGame();
