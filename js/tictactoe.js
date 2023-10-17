@@ -47,13 +47,15 @@ const game = (function (mainDoc) {
     /**
      * 
      * @param {String} name 
-     * @param {MOVE_TYPE} moveType 
+     * @param {MOVE_TYPE} moveType
+     * @param {boolean} isComputer 
      * @returns 
      */
-    function createPlayer(name, moveType) {
+    function createPlayer(name, moveType, isComputer = false) {
         let playerScore = 0;
         let playerName = name;
         let playerMoveType;
+        let playerIsComputer = isComputer;
 
         const incrementScore = () => {
             playerScore += 1;
@@ -78,6 +80,7 @@ const game = (function (mainDoc) {
         const getScore = () => playerScore;
         const getName = () => playerName;
         const getMoveType = () => playerMoveType;
+        const checkIfIsComputer = () => playerIsComputer;
 
         setMoveType();
 
@@ -87,7 +90,8 @@ const game = (function (mainDoc) {
             getScore,
             incrementScore,
             resetScore,
-            setName
+            setName,
+            checkIfIsComputer
         }
     }
 
@@ -101,13 +105,15 @@ const game = (function (mainDoc) {
         const computerScoreDisplay = doc.querySelector("#computer-score");
         const playerNameDisplay = doc.querySelector("#player-display-name");
         const comNameDisplay = doc.querySelector("#computer-display-name");
+        const currentTurnDisplay = doc.querySelector(".current-turn-display");
 
         let currentTurn;
         let player = createPlayer("Player", MOVE_TYPE.X);
-        let computer = createPlayer("Computer", MOVE_TYPE.O);
+        let computer = createPlayer("Computer", MOVE_TYPE.O, true);
 
         function randomizeFirstTurn() {
             (Math.random() < 0.5) ? currentTurn = TURN.PLAYER_TURN : currentTurn = TURN.COMPUTER_TURN;
+            updateTurnDisplay();
         }
 
         function advanceTurn() {
@@ -116,6 +122,7 @@ const game = (function (mainDoc) {
             } else {
                 currentTurn = TURN.PLAYER_TURN;
             }
+            updateTurnDisplay();
         }
 
         function getCurrentPlayer() {
@@ -133,12 +140,14 @@ const game = (function (mainDoc) {
                 computer.incrementScore();
             }
             displayScore();
+            updateTurnDisplay();
         }
 
         function resetScoreBoard() {
             player.resetScore();
             computer.resetScore();
             displayScore();
+            updateTurnDisplay();
         }
 
         function displayScore() {
@@ -149,6 +158,10 @@ const game = (function (mainDoc) {
         function displayNames() {
             playerNameDisplay.textContent = player.getName();
             comNameDisplay.textContent = computer.getName();
+        }
+
+        function updateTurnDisplay() {
+            currentTurnDisplay.textContent = `${getCurrentPlayer().getName()}'s Turn`.toUpperCase();
         }
 
         function setPlayerNames(playerName, computerName) {
@@ -163,12 +176,56 @@ const game = (function (mainDoc) {
             incrementcurrentPlayerScore,
             resetScoreBoard,
             setPlayerNames,
-            displayNames
+            displayNames,
+            updateTurnDisplay
         }
     })(mainDoc);
 
+    //computer AI logic
+    const computerLogic = (function () {
+        let computerPlayerData = null;
+
+        function playRandomMove(mainBoard) {
+            let availablePosition = [];
+            for (let i = 0; i < mainBoard.length; i++) {
+                for (let j = 0; j < mainBoard[i].length; j++) {
+                    if (mainBoard[i][j] === 0) {
+                        availablePosition.push([i, j]);
+                    }
+                }
+            }
+
+            if (availablePosition.length > 0) {
+                let randomPosition = Math.floor(Math.random()*(availablePosition.length - 1));
+                let x = availablePosition[randomPosition][0];
+                let y = availablePosition[randomPosition][1];
+
+                computerPlayerData = createLocation(x, y);
+            } else {
+                return null;
+            }
+        }
+
+        function getComputerData() {
+            if (computerPlayerData != null) {
+                return computerPlayerData;
+            } else {
+                throw new Error("computer has not play a move yet!");
+            }
+        }
+
+        function playMoveAndReturnData(board) {
+            playRandomMove(board);
+            return getComputerData();
+        }
+
+        return {
+            playMoveAndReturnData
+        }
+    })();
+
     //Board logic
-    const gameBoard = (function (doc, manager) {
+    const gameBoard = (function (doc, manager, comLogic) {
 
         let mainBoard = [
             [0, 0, 0],
@@ -202,13 +259,15 @@ const game = (function (mainDoc) {
                     cell.addEventListener("click", (e) => {
                         if (e.target.hasAttribute("data-x") &&
                             e.target.hasAttribute("data-y")) {
-                            placeMove(
-                                manager.getCurrentPlayer().getMoveType(),
-                                createLocation(
-                                    parseInt(e.target.getAttribute("data-x")),
-                                    parseInt(e.target.getAttribute("data-y"))
+                            if(!manager.getCurrentPlayer().checkIfIsComputer()){
+                                placeMove(
+                                    manager.getCurrentPlayer().getMoveType(),
+                                    createLocation(
+                                        parseInt(e.target.getAttribute("data-x")),
+                                        parseInt(e.target.getAttribute("data-y"))
+                                    )
                                 )
-                            )
+                            }
                         }
                     });
 
@@ -238,10 +297,23 @@ const game = (function (mainDoc) {
                 [0, 0, 0],
             ];
             currentBoardState = BOARD_STATE.ONGOING;
+            manager.randomizeFirstTurn();
+            playComputerMoveIfItsTurn();
         }
 
         function getCurrentBoardState() {
             return currentBoardState;
+        }
+
+        function playComputerMoveIfItsTurn(){
+            if(manager.getCurrentPlayer().checkIfIsComputer()){
+                setTimeout( () => {
+                    placeMove(
+                        manager.getCurrentPlayer().getMoveType(),
+                        comLogic.playMoveAndReturnData(mainBoard)
+                    )
+                }, 500);
+            }
         }
 
         function showToast(message) {
@@ -265,6 +337,7 @@ const game = (function (mainDoc) {
                 displayWinning();
                 updateBoard();
                 manager.advanceTurn();
+                playComputerMoveIfItsTurn();
             }
         }
 
@@ -388,7 +461,7 @@ const game = (function (mainDoc) {
             placeMove,
             getCurrentBoardState
         }
-    })(mainDoc, turnManager)
+    })(mainDoc, turnManager, computerLogic)
 
     function initGame() {
         askForNameDialog();
@@ -417,6 +490,7 @@ const game = (function (mainDoc) {
                     (comNameInput == null) ? "Computer" : comNameInput
                 )
                 turnManager.displayNames();
+                turnManager.updateTurnDisplay();
                 gameBoard.initBoard();
                 formModal.close();
             }
