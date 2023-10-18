@@ -169,6 +169,14 @@ const game = (function (mainDoc) {
             computer.setName(computerName);
         }
 
+        function getPlayer() {
+            return player;
+        }
+
+        function getComputer() {
+            return computer;
+        }
+
         return {
             randomizeFirstTurn,
             advanceTurn,
@@ -177,26 +185,28 @@ const game = (function (mainDoc) {
             resetScoreBoard,
             setPlayerNames,
             displayNames,
-            updateTurnDisplay
+            updateTurnDisplay,
+            getPlayer,
+            getComputer
         }
     })(mainDoc);
 
     //computer AI logic
-    const computerLogic = (function () {
+    const calculationLogic = (function (manager) {
         let computerPlayerData = null;
 
-        function playRandomMove(mainBoard) {
+        function playRandomMove(board) {
             let availablePosition = [];
-            for (let i = 0; i < mainBoard.length; i++) {
-                for (let j = 0; j < mainBoard[i].length; j++) {
-                    if (mainBoard[i][j] === 0) {
+            for (let i = 0; i < board.length; i++) {
+                for (let j = 0; j < board[i].length; j++) {
+                    if (board[i][j] === 0) {
                         availablePosition.push([i, j]);
                     }
                 }
             }
 
             if (availablePosition.length > 0) {
-                let randomPosition = Math.floor(Math.random()*(availablePosition.length - 1));
+                let randomPosition = Math.floor(Math.random() * (availablePosition.length - 1));
                 let x = availablePosition[randomPosition][0];
                 let y = availablePosition[randomPosition][1];
 
@@ -204,6 +214,10 @@ const game = (function (mainDoc) {
             } else {
                 return null;
             }
+        }
+
+        function playSmartMove(board) {
+            computerPlayerData = findBestMove(board);
         }
 
         function getComputerData() {
@@ -215,17 +229,174 @@ const game = (function (mainDoc) {
         }
 
         function playMoveAndReturnData(board) {
-            playRandomMove(board);
+            //playRandomMove(board);
+            playSmartMove(board);
             return getComputerData();
         }
 
-        return {
-            playMoveAndReturnData
+        function findBestMove(board) {
+            let bestMove = {
+                x: null,
+                y: null,
+                value: -1000
+            };
+
+            for (let i = 0; i < board.length; i++) {
+                for (let j = 0; j < board[i].length; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = manager.getPlayer().getMoveType();
+
+                        let bestVal = minimax(board, 0, false);
+
+                        board[i][j] = 0;
+
+                        if (bestVal > bestMove.value) {
+                            bestMove.x = i;
+                            bestMove.y = j;
+                            bestMove.value = bestVal;
+                        }
+                    }
+                }
+            }
+            console.log(`optimal value is ${bestMove.value}`);
+            return createLocation(bestMove.x, bestMove.y);
         }
-    })();
+
+        function calculateWinning(board) {
+            let rowResult = checkWinningRow(board);
+            let colResult = checkWinningColumn(board);
+            let diagResult = checkWinningDiagonal(board);
+
+            if (rowResult === 3 || rowResult === -3) {
+                return rowResult;
+            } else if (colResult === 3 || colResult === -3) {
+                return colResult;
+            } else if (diagResult === 3 || diagResult === -3) {
+                return diagResult;
+            } else {
+                return 0;
+            }
+        }
+
+        function checkWinningRow(board) {
+            for (let i = 0; i < board.length; i++) {
+                let rowSum = board[i].reduce((totalVal, currentVal) => {
+                    return totalVal + currentVal;
+                }, 0);
+
+                if (rowSum === 3 || rowSum === -3) {
+                    return rowSum;
+                }
+            }
+            return 0;
+        }
+
+        function checkWinningColumn(board) {
+            let sumColOne = 0;
+            let sumColTwo = 0;
+            let sumColThree = 0;
+
+            for (let j = 0; j < board[0].length; j++) {
+                for (let i = 0; i < board.length; i++) {
+                    if (j === 0) {
+                        sumColOne += board[i][j];
+                    } else if (j === 1) {
+                        sumColTwo += board[i][j];
+                    } else {
+                        sumColThree += board[i][j];
+                    }
+                }
+            }
+            if (sumColOne === 3 || sumColOne === -3) {
+                return sumColOne;
+            } else if (sumColTwo === 3 || sumColTwo === -3) {
+                return sumColTwo;
+            } else if (sumColThree === 3 || sumColThree === -3) {
+                return sumColThree;
+            } else {
+                return 0;
+            }
+        }
+
+        function checkWinningDiagonal(board) {
+            let sumDiagOne = board[0][0] + board[1][1] + board[2][2];
+            let sumDiagTwo = board[0][2] + board[1][1] + board[2][0];
+
+            if (sumDiagOne === 3 || sumDiagOne === -3) {
+                return sumDiagOne;
+            } else if (sumDiagTwo === 3 || sumDiagTwo === -3) {
+                return sumDiagTwo;
+            } else {
+                return 0;
+            }
+        }
+
+        function checkIfBoardFull(board) {
+            for (let i = 0; i < board.length; i++) {
+                for (let j = 0; j < board[i].length; j++) {
+                    if (board[i][j] === 0) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function minimax(board, depth, isMax) {
+            let score = calculateWinning(board);
+            if (score === 3) {
+                return score - depth;
+            }
+
+            if (score === -3) {
+                return depth - score;
+            }
+
+            if (checkIfBoardFull(board)) {
+                return 0;
+            }
+
+            if (isMax) {
+                let bestVal = -1000;
+                for (let i = 0; i < board.length; i++) {
+                    for (let j = 0; j < board[i].length; j++) {
+                        if (board[i][j] === 0) {
+                            board[i][j] = manager.getPlayer().getMoveType();
+
+                            bestVal = Math.max(bestVal, minimax(board, depth + 1, !isMax));
+
+                            board[i][j] = 0;
+                        }
+                    }
+                }
+                return bestVal;
+
+            } else {
+                let bestVal = 1000;
+                for (let i = 0; i < board.length; i++) {
+                    for (let j = 0; j < board[i].length; j++) {
+                        if (board[i][j] === 0) {
+                            board[i][j] = manager.getComputer().getMoveType();
+
+                            bestVal = Math.min(bestVal, minimax(board, depth + 1, !isMax));
+
+                            board[i][j] = 0;
+                        }
+                    }
+                }
+                return bestVal;
+            }
+        }
+
+        return {
+            playMoveAndReturnData,
+            calculateWinning,
+            checkIfBoardFull
+        }
+    })(turnManager);
 
     //Board logic
-    const gameBoard = (function (doc, manager, comLogic) {
+    const gameBoard = (function (doc, manager, calLogic) {
 
         let mainBoard = [
             [0, 0, 0],
@@ -259,7 +430,7 @@ const game = (function (mainDoc) {
                     cell.addEventListener("click", (e) => {
                         if (e.target.hasAttribute("data-x") &&
                             e.target.hasAttribute("data-y")) {
-                            if(!manager.getCurrentPlayer().checkIfIsComputer()){
+                            if (!manager.getCurrentPlayer().checkIfIsComputer()) {
                                 placeMove(
                                     manager.getCurrentPlayer().getMoveType(),
                                     createLocation(
@@ -305,14 +476,16 @@ const game = (function (mainDoc) {
             return currentBoardState;
         }
 
-        function playComputerMoveIfItsTurn(){
-            if(manager.getCurrentPlayer().checkIfIsComputer()){
-                setTimeout( () => {
-                    placeMove(
-                        manager.getCurrentPlayer().getMoveType(),
-                        comLogic.playMoveAndReturnData(mainBoard)
-                    )
-                }, 500);
+        function playComputerMoveIfItsTurn() {
+            if (manager.getCurrentPlayer().checkIfIsComputer()) {
+                if (calLogic.checkIfBoardFull(mainBoard) == false) {
+                    setTimeout(() => {
+                        placeMove(
+                            manager.getCurrentPlayer().getMoveType(),
+                            calLogic.playMoveAndReturnData(mainBoard)
+                        )
+                    }, 500);
+                }
             }
         }
 
@@ -355,8 +528,8 @@ const game = (function (mainDoc) {
         }
 
         function displayWinning() {
-            let result = calculateWinning();
-            let boardFullCheck = checkIfBoardFull();
+            let result = calLogic.calculateWinning(mainBoard);
+            let boardFullCheck = calLogic.checkIfBoardFull(mainBoard);
             if (result === 3) {
                 console.log("X win!");
                 showToast(`X win, ${turnManager.getCurrentPlayer().getName()} has won this game!`);
@@ -376,92 +549,13 @@ const game = (function (mainDoc) {
             }
         }
 
-        function checkIfBoardFull() {
-            for (let i = 0; i < mainBoard.length; i++) {
-                for (let j = 0; j < mainBoard[i].length; j++) {
-                    if (mainBoard[i][j] === 0) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        function calculateWinning() {
-            let rowResult = checkWinningRow();
-            let colResult = checkWinningColumn();
-            let diagResult = checkWinningDiagonal();
-
-            if (rowResult === 3 || rowResult === -3) {
-                return rowResult;
-            } else if (colResult === 3 || colResult === -3) {
-                return colResult;
-            } else if (diagResult === 3 || diagResult === -3) {
-                return diagResult;
-            } else {
-                return -1;
-            }
-        }
-
-        function checkWinningRow() {
-            for (let i = 0; i < mainBoard.length; i++) {
-                let rowSum = mainBoard[i].reduce((totalVal, currentVal) => {
-                    return totalVal + currentVal;
-                }, 0);
-
-                if (rowSum === 3 || rowSum === -3) {
-                    return rowSum;
-                }
-            }
-            return -1;
-        }
-
-        function checkWinningColumn() {
-            let sumColOne = 0;
-            let sumColTwo = 0;
-            let sumColThree = 0;
-
-            for (let j = 0; j < mainBoard[0].length; j++) {
-                for (let i = 0; i < mainBoard.length; i++) {
-                    if (j === 0) {
-                        sumColOne += mainBoard[i][j];
-                    } else if (j === 1) {
-                        sumColTwo += mainBoard[i][j];
-                    } else {
-                        sumColThree += mainBoard[i][j];
-                    }
-                }
-            }
-            if (sumColOne === 3 || sumColOne === -3) {
-                return sumColOne;
-            } else if (sumColTwo === 3 || sumColTwo === -3) {
-                return sumColTwo;
-            } else if (sumColThree === 3 || sumColThree === -3) {
-                return sumColThree;
-            } else {
-                return -1;
-            }
-        }
-
-        function checkWinningDiagonal() {
-            let sumDiagOne = mainBoard[0][0] + mainBoard[1][1] + mainBoard[2][2];
-            let sumDiagTwo = mainBoard[0][2] + mainBoard[1][1] + mainBoard[2][0];
-
-            if (sumDiagOne === 3 || sumDiagOne === -3) {
-                return sumDiagOne;
-            } else if (sumDiagTwo === 3 || sumDiagTwo === -3) {
-                return sumDiagTwo;
-            } else {
-                return -1;
-            }
-        }
 
         return {
             initBoard,
             placeMove,
             getCurrentBoardState
         }
-    })(mainDoc, turnManager, computerLogic)
+    })(mainDoc, turnManager, calculationLogic)
 
     const gameContainer = mainDoc.querySelector(".game-container");
     const scoreBoard = mainDoc.querySelector(".score-board");
@@ -474,12 +568,12 @@ const game = (function (mainDoc) {
         gameBoard.initBoard();
     }
 
-    function hideGame(){
+    function hideGame() {
         gameContainer.style.display = "none";
         scoreBoard.style.display = "none";
     }
 
-    function showGame(){
+    function showGame() {
         gameContainer.classList.add("container-slideIn");
         gameContainer.style.display = "grid";
 
