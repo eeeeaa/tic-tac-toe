@@ -22,6 +22,23 @@ body {
     }
 }
 
+@keyframes slideInFromBottom {
+    0% {
+        transform: translateY(50%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.scoreboard-slideIn,
+.container-slideIn {
+    animation: slideInFromBottom 1s;
+}
+
 body {
     min-height: 100vh;
     display: grid;
@@ -81,7 +98,7 @@ tr:nth-child(odd) td {
 .toast-container {
     appearance: none;
     position: fixed;
-    top:-25%;
+    top: 10%;
     transform: translateY(-50%);
     z-index: 1;
     border-color: transparent;
@@ -159,6 +176,7 @@ input[type="text"] {
     padding: 1em;
     border: 2px solid #e11d48;
     cursor: pointer;
+    border-radius: 1em;
 }
 
 .game-container .reset-board-button {
@@ -174,4 +192,11 @@ input[type="text"] {
     height: 2em;
     font-size: xx-large;
     font-weight: 900;
+    border-radius: 1em;
+    transition: all 0.2s ease;
+}
+
+.game-container #game-board .game-cell:hover {
+    transform: scale(1.05);
+    transition: all 0.2s ease;
 }

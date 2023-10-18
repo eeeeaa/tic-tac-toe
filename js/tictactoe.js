@@ -463,6 +463,9 @@ const game = (function (mainDoc) {
         }
     })(mainDoc, turnManager, computerLogic)
 
+    const gameContainer = mainDoc.querySelector(".game-container");
+    const scoreBoard = mainDoc.querySelector(".score-board");
+
     function initGame() {
         askForNameDialog();
     }
@@ -471,7 +474,24 @@ const game = (function (mainDoc) {
         gameBoard.initBoard();
     }
 
+    function hideGame(){
+        gameContainer.style.display = "none";
+        scoreBoard.style.display = "none";
+    }
+
+    function showGame(){
+        gameContainer.classList.add("container-slideIn");
+        gameContainer.style.display = "grid";
+
+        setTimeout(() => {
+            scoreBoard.classList.add("scoreboard-slideIn");
+            scoreBoard.style.display = "table";
+        }, 1000);
+    }
+
     function askForNameDialog() {
+        hideGame();
+
         const formModal = mainDoc.querySelector(".form-container");
         const form = mainDoc.querySelector(".name-form");
         const button = mainDoc.querySelector(".submit-button");
@@ -486,13 +506,14 @@ const game = (function (mainDoc) {
                 const playerNameInput = mainDoc.querySelector("#player-name").value;
                 const comNameInput = mainDoc.querySelector("#computer-name").value;
                 turnManager.setPlayerNames(
-                    (playerNameInput == null) ? "Player" : playerNameInput,
+                    (playerNameInput == null) ? "Player (you)" : `${playerNameInput} (you)`,
                     (comNameInput == null) ? "Computer" : comNameInput
                 )
                 turnManager.displayNames();
                 turnManager.updateTurnDisplay();
                 gameBoard.initBoard();
                 formModal.close();
+                showGame();
             }
         });
     }
