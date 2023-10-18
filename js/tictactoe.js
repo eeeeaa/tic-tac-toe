@@ -228,9 +228,13 @@ const game = (function (mainDoc) {
             }
         }
 
-        function playMoveAndReturnData(board) {
-            //playRandomMove(board);
-            playSmartMove(board);
+        function playMoveAndReturnData(board, isSmartPlay = true) {
+            if(isSmartPlay){
+               playSmartMove(board); 
+            } else {
+               playRandomMove(board);
+            }
+            
             return getComputerData();
         }
 
